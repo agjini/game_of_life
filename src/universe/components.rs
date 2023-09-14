@@ -1,81 +1,44 @@
-use std::fmt::{Display, Formatter};
-
 use bevy::prelude::Component;
+use bevy::utils::HashMap;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Cell {
+#[derive(Component, Copy, Clone, Debug)]
+pub struct Cell {
+    pub(crate) x: i32,
+    pub(crate) y: i32,
+    pub(crate) state: State,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum State {
     Dead = 0,
     Alive = 1,
 }
 
-#[derive(Component)]
 pub struct Universe {
-    pub width: u32,
-    pub height: u32,
-    pub cells: Vec<Cell>,
-}
-
-impl Display for Universe {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let alive = self.cells.iter()
-            .filter(|&&cell| cell == Cell::Alive)
-            .count();
-        write!(f, "Universe {{ width: {}, height: {}, cells: {} }}", self.width, self.height, alive)
-    }
+    pub cells: HashMap<(i32, i32), State>,
 }
 
 impl Universe {
-    pub fn tick(&mut self) {
-        let mut next = self.cells.clone();
-
-        for row in 0..self.height {
-            for col in 0..self.width {
-                let idx = self.get_index(row, col);
-                let cell = self.cells[idx];
-                let live_neighbors = self.live_neighbor_count(row, col);
-
-                let next_cell = match (cell, live_neighbors) {
-                    // Rule 1: Any live cell with fewer than two live neighbours
-                    // dies, as if caused by underpopulation.
-                    (Cell::Alive, x) if x < 2 => Cell::Dead,
-                    // Rule 2: Any live cell with two or three live neighbours
-                    // lives on to the next generation.
-                    (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                    // Rule 3: Any live cell with more than three live
-                    // neighbours dies, as if by overpopulation.
-                    (Cell::Alive, x) if x > 3 => Cell::Dead,
-                    // Rule 4: Any dead cell with exactly three live neighbours
-                    // becomes a live cell, as if by reproduction.
-                    (Cell::Dead, 3) => Cell::Alive,
-                    // All other cells remain in the same state.
-                    (otherwise, _) => otherwise,
-                };
-
-                next[idx] = next_cell;
-            }
-        }
-
-        self.cells = next;
+    pub(crate) fn snapshot<'a>(cells: impl Iterator<Item=&'a Cell>) -> Universe {
+        let cells: HashMap<(i32, i32), State> = cells
+            .map(|cell| ((cell.x, cell.y), cell.state))
+            .collect();
+        Universe { cells }
     }
 
-    fn live_neighbor_count(&self, row: u32, column: u32) -> u8 {
+    pub(crate) fn get_alive_neighbours(&self, cell: &Cell) -> u32 {
         let mut count = 0;
-        for delta_row in [self.height - 1, 0, 1].iter().cloned() {
-            for delta_col in [self.width - 1, 0, 1].iter().cloned() {
-                if delta_row == 0 && delta_col == 0 {
+        for xx in [cell.x - 1, cell.x, cell.x + 1] {
+            for yy in [cell.y - 1, cell.y, cell.y + 1] {
+                if xx == cell.x && yy == cell.y {
                     continue;
                 }
 
-                let neighbor_row = (row + delta_row) % self.height;
-                let neighbor_col = (column + delta_col) % self.width;
-                let idx = self.get_index(neighbor_row, neighbor_col);
-                count += self.cells[idx] as u8;
+                if let Some(State::Alive) = self.cells.get(&(xx, yy)) {
+                    count += 1;
+                }
             }
         }
         count
-    }
-
-    fn get_index(&self, row: u32, column: u32) -> usize {
-        (row * self.width + column) as usize
     }
 }

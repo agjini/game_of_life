@@ -1,4 +1,4 @@
 mod resources;
-mod components;
+pub(crate) mod components;
 mod systems;
 pub mod plugin;
