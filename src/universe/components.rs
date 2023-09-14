@@ -1,11 +1,14 @@
 use bevy::prelude::Component;
 use bevy::utils::HashMap;
 
+#[derive(Component)]
+pub struct MainCamera;
+
 #[derive(Component, Copy, Clone, Debug)]
 pub struct Cell {
-    pub(crate) x: i32,
-    pub(crate) y: i32,
-    pub(crate) state: State,
+    pub x: i32,
+    pub y: i32,
+    pub state: State,
 }
 
 #[derive(Copy, Clone, Debug)]

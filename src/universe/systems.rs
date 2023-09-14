@@ -1,14 +1,14 @@
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::input::Input;
 use bevy::math::{Rect, Vec2};
-use bevy::prelude::{Camera, Camera2dBundle, Changed, Color, Commands, KeyCode, MouseButton, Query, Res, ResMut, Transform, With};
+use bevy::prelude::{Camera, Camera2dBundle, Changed, Color, Commands, GlobalTransform, KeyCode, MouseButton, Query, Res, ResMut, Transform, With};
 use bevy::sprite::{Sprite, SpriteBundle};
 use bevy::time::Time;
 use bevy::utils::default;
 use bevy::window::{PrimaryWindow, Window};
 use rand::Rng;
 
-use crate::universe::components::{Cell, State, Universe};
+use crate::universe::components::{Cell, MainCamera, State, Universe};
 use crate::universe::resources::StepTimer;
 
 const UNIVERSE_SIZE: u32 = 100;
@@ -24,6 +24,7 @@ pub fn create_universe(mut commands: Commands) {
             },
             ..default()
         },
+        MainCamera,
         BloomSettings {
             intensity: 0.25,
             ..default()
@@ -32,7 +33,7 @@ pub fn create_universe(mut commands: Commands) {
     let mut rng = rand::thread_rng();
     for x in 0..UNIVERSE_SIZE {
         for y in 0..UNIVERSE_SIZE {
-            let state = if rng.gen_ratio(3, 60) {
+            let state = if rng.gen_ratio(7, 60) {
                 State::Alive
             } else {
                 State::Dead
@@ -66,22 +67,35 @@ pub fn create_universe(mut commands: Commands) {
     }
 }
 
-pub fn click_on_cell(input: Res<Input<MouseButton>>,
-                     q_windows: Query<&Window, With<PrimaryWindow>>,
+pub fn click_on_cell(camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+                     input: Res<Input<MouseButton>>,
+                     window: Query<&Window, With<PrimaryWindow>>,
                      mut query: Query<&mut Cell>) {
     if !input.pressed(MouseButton::Left) {
         return;
     }
-    let position = q_windows.single().cursor_position();
+    
+    let position = window.single().cursor_position();
     if position.is_none() {
         return;
     }
-    // get cell under mouser position
-    let cell_x = ((position.unwrap().x + (UNIVERSE_SIZE as f32 / 2. * (CELL_SIZE + GAP))) / (CELL_SIZE + GAP)) as i32 / CELL_SIZE as i32;
-    let cell_y = ((position.unwrap().y + (UNIVERSE_SIZE as f32 / 2. * (CELL_SIZE + GAP))) / (CELL_SIZE + GAP)) as i32 / CELL_SIZE as i32;
-    for mut cell in &mut query {
-        if cell.x == cell_x && cell.y == cell_y {
-            cell.state = State::Alive;
+
+    // get the camera info and transform
+    // assuming there is exactly one main camera entity, so query::single() is OK
+    let (camera, camera_transform) = camera_q.single();
+
+    // check if the cursor is inside the window and get its position
+    // then, ask bevy to convert into world coordinates, and truncate to discard Z
+    if let Some(world_position) = window.single().cursor_position()
+        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
+        .map(|ray| ray.origin.truncate())
+    {
+        let cell_x = ((world_position.x + (UNIVERSE_SIZE as f32 / 2. * (CELL_SIZE + GAP))) / (CELL_SIZE + GAP)).floor() as i32;
+        let cell_y = ((world_position.y + (UNIVERSE_SIZE as f32 / 2. * (CELL_SIZE + GAP))) / (CELL_SIZE + GAP)).floor() as i32;
+        for mut cell in &mut query {
+            if cell.x == cell_x && cell.y == cell_y {
+                cell.state = State::Alive;
+            }
         }
     }
 }
@@ -90,10 +104,10 @@ pub fn entropy(input: Res<Input<KeyCode>>, mut query: Query<&mut Cell>) {
     if !input.just_pressed(KeyCode::Space) {
         return;
     }
-    
+
     let mut rng = rand::thread_rng();
     for mut cell in &mut query {
-        cell.state = if rng.gen_ratio(3, 60) {
+        cell.state = if rng.gen_ratio(7, 60) {
             State::Alive
         } else {
             State::Dead
