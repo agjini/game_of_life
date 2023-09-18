@@ -1,10 +1,10 @@
 # game_of_life
 
-A rust implementation of Conway's Game of Life in rust using the bevy game engine !
+A rust implementation of Conway's Game of Life in rust using the [bevy game engine](https://bevyengine.org/)!
 
-[Bevy engine](https://bevyengine.org/)
+![](doc/screenshot.png)
 
-
+How to run :
 ```bash
 cargo run
 ```
