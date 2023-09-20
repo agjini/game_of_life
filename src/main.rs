@@ -1,10 +1,12 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-use universe::plugin::GameOfLifePlugin;
+use crate::plugin::GameOfLifePlugin;
 
-mod test;
-pub mod universe;
+mod universe;
+mod cell;
+mod system;
+mod plugin;
+mod timer;
 
 fn main() {
     App::new()

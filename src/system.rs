@@ -8,10 +8,10 @@ use bevy::utils::default;
 use bevy::window::{PrimaryWindow, Window};
 use rand::Rng;
 
-use crate::universe::components::{Cell, MainCamera, State, Universe};
-use crate::universe::resources::StepTimer;
+use crate::cell::{Cell, MainCamera, State};
+use crate::timer::StepTimer;
+use crate::universe::{Universe, UNIVERSE_SIZE};
 
-const UNIVERSE_SIZE: u32 = 100;
 const CELL_SIZE: f32 = 8.;
 const GAP: f32 = 0.;
 
@@ -30,6 +30,7 @@ pub fn create_universe(mut commands: Commands) {
             ..default()
         },
     ));
+    commands.insert_resource(Universe::new());
     let mut rng = rand::thread_rng();
     for x in 0..UNIVERSE_SIZE {
         for y in 0..UNIVERSE_SIZE {
@@ -55,8 +56,8 @@ pub fn create_universe(mut commands: Commands) {
                     ..default()
                 })
                 .insert(Cell {
-                    x: x as i32,
-                    y: y as i32,
+                    x,
+                    y,
                     state,
                 });
         }
@@ -102,7 +103,7 @@ fn from_world_to_cell_coordinate(c: f32) -> i32 {
     ((c + (UNIVERSE_SIZE as f32 / 2. * (CELL_SIZE + GAP))) / (CELL_SIZE + GAP)).floor() as i32
 }
 
-fn from_cell_to_world(x: u32, y: u32) -> Transform {
+fn from_cell_to_world(x: i32, y: i32) -> Transform {
     Transform::from_xyz(
         from_cell_to_world_coordinate(x),
         from_cell_to_world_coordinate(y),
@@ -110,7 +111,7 @@ fn from_cell_to_world(x: u32, y: u32) -> Transform {
     )
 }
 
-fn from_cell_to_world_coordinate(x: u32) -> f32 {
+fn from_cell_to_world_coordinate(x: i32) -> f32 {
     (x as f32) * (CELL_SIZE + GAP) - (UNIVERSE_SIZE as f32 / 2. * (CELL_SIZE + GAP))
 }
 
@@ -129,9 +130,13 @@ pub fn entropy(input: Res<Input<KeyCode>>, mut query: Query<&mut Cell>) {
     }
 }
 
-pub fn update_cells(time: Res<Time>, mut timer: ResMut<StepTimer>, mut query: Query<(&mut Cell, &mut Sprite)>) {
+pub fn update_cells(time: Res<Time>,
+                    mut universe: ResMut<Universe>,
+                    mut timer: ResMut<StepTimer>,
+                    mut query: Query<(&mut Cell, &mut Sprite)>,
+) {
     let time_to_change = timer.0.tick(time.delta()).just_finished();
-    let universe = Universe::snapshot(query.iter().map(|(cell, _)| cell));
+    universe.snapshot(query.iter().map(|(cell, _)| cell));
     for (mut cell, mut sprite) in &mut query {
         let live_neighbors = universe.get_alive_neighbours(&cell);
         if time_to_change {

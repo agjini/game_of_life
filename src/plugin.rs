@@ -3,8 +3,8 @@ use bevy::prelude::{ClearColor, Color};
 use bevy::time::{Timer, TimerMode};
 use bevy::window::close_on_esc;
 
-use crate::universe::resources::StepTimer;
-use crate::universe::systems::{click_on_cell, create_universe, entropy, update_cells};
+use crate::system::{click_on_cell, create_universe, entropy, update_cells};
+use crate::timer::StepTimer;
 
 pub struct GameOfLifePlugin;
 
