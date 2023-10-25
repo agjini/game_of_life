@@ -9,6 +9,9 @@ mod system;
 mod plugin;
 mod timer;
 
+#[cfg(test)]
+mod test;
+
 fn main() {
     App::new()
         .add_plugins((
