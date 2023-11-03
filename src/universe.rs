@@ -2,7 +2,7 @@ use bevy::prelude::Resource;
 
 use crate::cell::{Cell, State};
 
-pub const UNIVERSE_SIZE: i32 = 100;
+pub const UNIVERSE_SIZE: i32 = 1;
 
 #[derive(Resource)]
 pub struct Universe {
@@ -16,7 +16,7 @@ impl Universe {
         }
     }
 
-    pub fn snapshot<'a>(&mut self, cells: impl Iterator<Item=&'a Cell>) {
+    pub fn snapshot<'a>(&mut self, cells: impl Iterator<Item = &'a Cell>) {
         cells.for_each(|cell| {
             let index = self.get_index(cell.x, cell.y);
             self.cells[index] = cell.state;
