@@ -5,6 +5,7 @@ use crate::plugin::GameOfLifePlugin;
 mod cell;
 mod plugin;
 mod system;
+mod tiles;
 mod timer;
 mod universe;
 
