@@ -1,15 +1,5 @@
 use bevy::prelude::*;
-
-use crate::plugin::GameOfLifePlugin;
-
-mod cell;
-mod plugin;
-mod system;
-mod timer;
-mod universe;
-
-#[cfg(test)]
-mod test;
+use game_of_life::GameOfLifePlugin;
 
 fn main() {
     App::new()

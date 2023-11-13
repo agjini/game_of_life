@@ -1,3 +1,11 @@
+mod cell;
+mod system;
+mod timer;
+mod universe;
+
+#[cfg(test)]
+mod test;
+
 use crate::cell::Cell;
 use bevy::app::{App, Plugin, Startup, Update};
 use bevy::input::Input;
