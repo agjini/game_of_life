@@ -12,7 +12,7 @@ use bevy::input::Input;
 use bevy::prelude::{ClearColor, Color, KeyCode, Res, ResMut, Resource};
 use bevy::time::{Timer, TimerMode};
 use bevy::window::close_on_esc;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+// use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 use crate::system::{click_on_cell, create_universe, entropy, update_cells};
 use crate::timer::StepTimer;
@@ -26,16 +26,16 @@ struct Settings {
 
 impl Plugin for GameOfLifePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(
-            WorldInspectorPlugin::new().run_if(|settings: Res<Settings>| settings.display),
-        )
-        .insert_resource(Settings::default())
-        .insert_resource(ClearColor(Color::BLACK))
-        .insert_resource(StepTimer(Timer::from_seconds(0.2, TimerMode::Repeating)))
-        .add_systems(Startup, create_universe)
-        .add_systems(Update, (update_cells, click_on_cell, entropy))
-        .add_systems(Update, (toggle_settings, close_on_esc))
-        .register_type::<Cell>();
+        // app.add_plugins(
+        //     WorldInspectorPlugin::new().run_if(|settings: Res<Settings>| settings.display),
+        // )
+        app.insert_resource(Settings::default())
+            .insert_resource(ClearColor(Color::BLACK))
+            .insert_resource(StepTimer(Timer::from_seconds(0.2, TimerMode::Repeating)))
+            .add_systems(Startup, create_universe)
+            .add_systems(Update, (update_cells, click_on_cell, entropy))
+            .add_systems(Update, (toggle_settings, close_on_esc))
+            .register_type::<Cell>();
     }
 }
 

@@ -25,17 +25,13 @@ inherits = "release"
 lto = "thin"
 
 [features]
-dev = [
-    "bevy/dynamic_linking",
-]
+dev = ["bevy/dynamic_linking"]
 
 # All of Bevy's default features exept for the audio related ones (bevy_audio, vorbis), since they clash with bevy_kira_audio
 #   and android_shared_stdcxx, since that is covered in `mobile`
 [dependencies]
 bevy = { version = "0.12.0"}
-bevy-inspector-egui = "0.21.0"
+itertools = "0.12.0"
+#bevy-inspector-egui = "0.21.0"
 #bevy_dylib = "0.12.0"
 rand = "0.8.5"
-
-[build-dependencies]
-embed-resource = "1.4"

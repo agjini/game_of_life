@@ -1,11 +1,16 @@
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::input::Input;
-use bevy::math::{Rect, Vec2};
-use bevy::prelude::{Camera, Camera2dBundle, Color, Commands, GlobalTransform, KeyCode, MouseButton, Query, Res, ResMut, Transform, With};
+use bevy::math::{IVec2, Rect, Vec2};
+use bevy::prelude::MouseButton::Left;
+use bevy::prelude::{
+    Camera, Camera2dBundle, Color, Commands, GlobalTransform, KeyCode, MouseButton, Query, Res,
+    ResMut, Touches, Transform, With,
+};
 use bevy::sprite::{Sprite, SpriteBundle};
 use bevy::time::Time;
 use bevy::utils::default;
 use bevy::window::{PrimaryWindow, Window};
+use itertools::Itertools;
 use rand::Rng;
 
 use crate::cell::{Cell, MainCamera, State};
@@ -55,48 +60,76 @@ pub fn create_universe(mut commands: Commands) {
                     },
                     ..default()
                 })
-                .insert(Cell {
-                    x,
-                    y,
-                    state,
-                });
+                .insert(Cell { x, y, state });
         }
     }
 }
 
-pub fn click_on_cell(camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-                     input: Res<Input<MouseButton>>,
-                     window: Query<&Window, With<PrimaryWindow>>,
-                     mut query: Query<&mut Cell>) {
-    if !input.pressed(MouseButton::Left) {
-        return;
-    }
-
-    if let Some(world_position) = get_click_world_position(camera_q, window) {
-        let (cell_x, cell_y) = from_world_to_cell(world_position);
-        for mut cell in &mut query {
-            if cell.x == cell_x && cell.y == cell_y {
+pub fn click_on_cell(
+    camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    touches: Res<Touches>,
+    mouse: Res<Input<MouseButton>>,
+    window: Query<&Window, With<PrimaryWindow>>,
+    mut cells: Query<&mut Cell>,
+) {
+    let (camera, camera_transform) = camera.single();
+    for IVec2 { x, y } in get_spawn_positions(
+        touches.as_ref(),
+        &mouse,
+        window.single(),
+        camera,
+        camera_transform,
+    ) {
+        for mut cell in &mut cells {
+            if cell.x == x && cell.y == y {
                 cell.state = State::Alive;
             }
         }
     }
 }
 
-fn get_click_world_position(camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>, window: Query<&Window, With<PrimaryWindow>>) -> Option<Vec2> {
-    // get the camera info and transform
-    // assuming there is exactly one main camera entity, so query::single() is OK
-    let (camera, camera_transform) = camera_q.single();
+fn get_spawn_positions<'a>(
+    touches: &'a Touches,
+    mouse: &'a Input<MouseButton>,
+    window: &'a Window,
+    camera: &'a Camera,
+    camera_transform: &'a GlobalTransform,
+) -> impl Iterator<Item = IVec2> + 'a {
+    get_tap_position(touches)
+        .chain(get_click_position(mouse, window.cursor_position()))
+        .flat_map(|p| from_window_to_world_position(p, camera, camera_transform))
+        .map(from_world_to_cell)
+        .dedup()
+}
 
-    // check if the cursor is inside the window and get its position
-    // then, ask bevy to convert into world coordinates, and truncate to discard Z
-    window.single()
-        .cursor_position()
-        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
+fn get_click_position(mouse: &Input<MouseButton>, cursor_position: Option<Vec2>) -> Option<Vec2> {
+    if !mouse.pressed(Left) {
+        None
+    } else {
+        cursor_position
+    }
+}
+
+fn get_tap_position(touches: &Touches) -> impl Iterator<Item = Vec2> + '_ {
+    touches.iter().map(|f| f.position())
+}
+
+fn from_window_to_world_position(
+    position: Vec2,
+    camera: &Camera,
+    camera_transform: &GlobalTransform,
+) -> Option<Vec2> {
+    // Ask bevy to convert into world coordinates, and truncate to discard Z
+    camera
+        .viewport_to_world(camera_transform, position)
         .map(|ray| ray.origin.truncate())
 }
 
-fn from_world_to_cell(world_position: Vec2) -> (i32, i32) {
-    (from_world_to_cell_coordinate(world_position.x), from_world_to_cell_coordinate(world_position.y))
+fn from_world_to_cell(world_position: Vec2) -> IVec2 {
+    IVec2::new(
+        from_world_to_cell_coordinate(world_position.x),
+        from_world_to_cell_coordinate(world_position.y),
+    )
 }
 
 fn from_world_to_cell_coordinate(c: f32) -> i32 {
@@ -130,10 +163,11 @@ pub fn entropy(input: Res<Input<KeyCode>>, mut query: Query<&mut Cell>) {
     }
 }
 
-pub fn update_cells(time: Res<Time>,
-                    mut universe: ResMut<Universe>,
-                    mut timer: ResMut<StepTimer>,
-                    mut query: Query<(&mut Cell, &mut Sprite)>,
+pub fn update_cells(
+    time: Res<Time>,
+    mut universe: ResMut<Universe>,
+    mut timer: ResMut<StepTimer>,
+    mut query: Query<(&mut Cell, &mut Sprite)>,
 ) {
     let time_to_change = timer.0.tick(time.delta()).just_finished();
     universe.snapshot(query.iter().map(|(cell, _)| cell));
@@ -154,7 +188,7 @@ fn update_color(cell: &Cell, live_neighbors: u32) -> Color {
             saturation: 1.,
             lightness: live_neighbors as f32 / 4.,
             alpha: 1.,
-        }
+        },
     }
 }
 
