@@ -14,7 +14,7 @@ use bevy::time::{Timer, TimerMode};
 use bevy::window::close_on_esc;
 // use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
-use crate::system::{click_on_cell, create_universe, entropy, update_cells};
+use crate::system::{click_on_cell, create_universe, entropy, render_cells, update_cells};
 use crate::timer::StepTimer;
 
 pub struct GameOfLifePlugin;
@@ -33,7 +33,7 @@ impl Plugin for GameOfLifePlugin {
             .insert_resource(ClearColor(Color::BLACK))
             .insert_resource(StepTimer(Timer::from_seconds(0.2, TimerMode::Repeating)))
             .add_systems(Startup, create_universe)
-            .add_systems(Update, (update_cells, click_on_cell, entropy))
+            .add_systems(Update, (update_cells, click_on_cell, entropy, render_cells))
             .add_systems(Update, (toggle_settings, close_on_esc))
             .register_type::<Cell>();
     }
