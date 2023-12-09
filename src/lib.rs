@@ -3,11 +3,13 @@ mod system;
 mod timer;
 mod universe;
 
+mod cell_buffer;
 #[cfg(test)]
 mod test;
 
 use crate::cell::Cell;
 use bevy::app::{App, Plugin, Startup, Update};
+use bevy::ecs::schedule::IntoSystemConfigs;
 use bevy::input::Input;
 use bevy::prelude::{ClearColor, Color, KeyCode, Res, ResMut, Resource};
 use bevy::time::{Timer, TimerMode};
@@ -33,8 +35,8 @@ impl Plugin for GameOfLifePlugin {
             .insert_resource(ClearColor(Color::BLACK))
             .insert_resource(StepTimer(Timer::from_seconds(0.2, TimerMode::Repeating)))
             .add_systems(Startup, create_universe)
-            .add_systems(Update, (update_cells, click_on_cell, entropy, render_cells))
-            .add_systems(Update, (toggle_settings, close_on_esc))
+            .add_systems(Update, (update_cells, click_on_cell, render_cells).chain())
+            .add_systems(Update, (entropy, toggle_settings, close_on_esc))
             .register_type::<Cell>();
     }
 }

@@ -3,8 +3,8 @@ use bevy::input::Input;
 use bevy::math::{Rect, Vec2};
 use bevy::prelude::MouseButton::Left;
 use bevy::prelude::{
-    Camera, Camera2dBundle, Commands, Entity, GlobalTransform, KeyCode, MouseButton, Query, Res,
-    ResMut, Touches, Transform, With,
+    Camera, Camera2dBundle, Commands, DetectChanges, Entity, GlobalTransform, KeyCode, MouseButton,
+    Query, Res, ResMut, Touches, Transform, With,
 };
 use bevy::sprite::{Sprite, SpriteBundle};
 use bevy::time::Time;
@@ -13,11 +13,12 @@ use bevy::window::{PrimaryWindow, Window};
 use itertools::Itertools;
 use rand::Rng;
 
-use crate::cell::State::Alive;
-use crate::cell::{Cell, MainCamera, State};
+use crate::cell::State::{Alive, Dead};
+use crate::cell::{Cell, MainCamera};
 use crate::timer::StepTimer;
-use crate::universe::{Universe, UNIVERSE_SIZE};
+use crate::universe::Universe;
 
+const UNIVERSE_SIZE: usize = 1000;
 const CELL_SIZE: f32 = 8.;
 const GAP: f32 = 0.;
 
@@ -36,7 +37,7 @@ pub fn create_universe(mut commands: Commands) {
             ..default()
         },
     ));
-    commands.insert_resource(Universe::with_entropy());
+    commands.insert_resource(Universe::with_entropy(UNIVERSE_SIZE));
 }
 
 pub fn render_cells(
@@ -44,10 +45,13 @@ pub fn render_cells(
     universe: Res<Universe>,
     cells: Query<Entity, With<Sprite>>,
 ) {
+    if !universe.is_changed() {
+        return;
+    }
     for entity in cells.iter() {
         commands.entity(entity).despawn();
     }
-    for cell in universe.cells().iter() {
+    for cell in universe.iter() {
         commands.spawn(SpriteBundle {
             transform: from_cell_to_world(cell.x, cell.y),
             sprite: Sprite {
@@ -149,11 +153,7 @@ pub fn entropy(input: Res<Input<KeyCode>>, mut query: Query<&mut Cell>) {
 
     let mut rng = rand::thread_rng();
     for mut cell in &mut query {
-        cell.state = if rng.gen_ratio(7, 60) {
-            State::Alive
-        } else {
-            State::Dead
-        };
+        cell.state = if rng.gen_ratio(7, 60) { Alive } else { Dead };
     }
 }
 
