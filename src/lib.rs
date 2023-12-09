@@ -1,4 +1,5 @@
 mod cell;
+mod cell_buffer;
 mod system;
 mod timer;
 mod universe;

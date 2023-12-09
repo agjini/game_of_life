@@ -6,9 +6,15 @@ A rust implementation of Conway's Game of Life in rust using the [bevy game engi
 
 How to run :
 ```bash
-cargo run
+cargo run -r
 ```
 
 - `Space` to generate a new random simulation
-- `Click` to add a cell
+- `Click or touch` to add a cells
 - `Esc` to escape the simulation
+
+How to build for android :
+```bash
+cd app
+cargo apk run
+```
