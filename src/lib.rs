@@ -3,7 +3,6 @@ mod system;
 mod timer;
 mod universe;
 
-mod cell_buffer;
 #[cfg(test)]
 mod test;
 

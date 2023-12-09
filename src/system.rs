@@ -18,7 +18,7 @@ use crate::cell::{Cell, MainCamera};
 use crate::timer::StepTimer;
 use crate::universe::Universe;
 
-const UNIVERSE_SIZE: usize = 1000;
+const UNIVERSE_SIZE: usize = 100;
 const CELL_SIZE: f32 = 8.;
 const GAP: f32 = 0.;
 
